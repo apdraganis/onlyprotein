@@ -1,6 +1,7 @@
 @page "/"
 @inject OnlyProteinApiClient Api
 @inject BarcodeScannerService Scanner
+@inject RecentProductsService RecentProducts
 @inject IWebAssemblyHostEnvironment HostEnvironment
 @implements IAsyncDisposable
 
@@ -64,6 +65,45 @@
             <p class="error">@_error</p>
         }
     </section>
+
+    @if (_recentProducts.Count > 0)
+    {
+        <section class="card recent-products">
+            <h2>Recent products</h2>
+            <div class="recent-product-list">
+                @foreach (var recentProduct in _recentProducts)
+                {
+                    <div class="recent-product">
+                        <div class="recent-product-main">
+                            <strong>@recentProduct.ProductName</strong>
+                            @if (!string.IsNullOrWhiteSpace(recentProduct.Brand))
+                            {
+                                <span class="muted">@recentProduct.Brand</span>
+                            }
+                            @if (recentProduct.CaloriesPer100 is not null || recentProduct.ProteinPer100 is not null)
+                            {
+                                <span class="recent-product-nutrition">
+                                    @if (recentProduct.CaloriesPer100 is not null)
+                                    {
+                                        <span>@recentProduct.CaloriesPer100.Value.ToString("0.#") kcal</span>
+                                    }
+                                    @if (recentProduct.ProteinPer100 is not null)
+                                    {
+                                        <span>@recentProduct.ProteinPer100.Value.ToString("0.#") g protein</span>
+                                    }
+                                    <span>per 100</span>
+                                </span>
+                            }
+                        </div>
+                        <div class="recent-product-meta">
+                            <span class="muted">Barcode: @recentProduct.Barcode</span>
+                            <span class="muted">Saved @recentProduct.SavedAt.ToLocalTime().ToString("g")</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    }
 
     @if (_product is not null)
     {
@@ -163,6 +203,7 @@
     private ProductInfo? _product;
     private Indices? _indices;
     private DotNetObjectReference<Index>? _scannerRef;
+    private IReadOnlyList<RecentProduct> _recentProducts = [];
 
     private decimal? _price;
     private decimal? _quantity;
@@ -173,6 +214,19 @@
     private string _quantityText = string.Empty;
     private string _kcalText = string.Empty;
     private string _proteinText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _recentProducts = await RecentProducts.GetAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.Error.WriteLine($"[OnlyProtein] Could not load recent products: {ex.Message}");
+            _error = "Saved recent products could not be loaded.";
+        }
+    }
 
     private void UseTestBarcode(TestBarcode sample)
     {
@@ -268,6 +322,7 @@
             }
 
             ApplyProductDefaults(_product);
+            await SaveRecentProductAsync(_product);
             await RecalculateAsync();
         }
         catch (HttpRequestException ex) when (ex.StatusCode is null)
@@ -289,6 +344,28 @@
         finally
         {
             _loading = false;
+        }
+    }
+
+    private async Task SaveRecentProductAsync(ProductInfo product)
+    {
+        try
+        {
+            await RecentProducts.AddAsync(new RecentProduct(
+                product.Barcode,
+                product.Name,
+                null,
+                _quantity,
+                _kcalPer100,
+                _proteinPer100,
+                DateTimeOffset.UtcNow));
+
+            _recentProducts = await RecentProducts.GetAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.Error.WriteLine($"[OnlyProtein] Could not save recent product: {ex.Message}");
+            _error = "Product loaded, but it could not be saved to recent products.";
         }
     }
 

@@ -139,6 +139,77 @@ html, body {
     font-variant-numeric: tabular-nums;
 }
 
+.recent-products {
+    margin-bottom: 1rem;
+}
+
+.recent-product-list {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.recent-product {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.7rem 0;
+    border-top: 1px solid var(--border);
+}
+
+.recent-product-main,
+.recent-product-meta {
+    min-width: 0;
+}
+
+.recent-product:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
+.recent-product strong,
+.recent-product .muted,
+.recent-product-nutrition {
+    display: block;
+}
+
+.recent-product strong {
+    margin-bottom: 0.2rem;
+}
+
+.recent-product-nutrition {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.75rem;
+    margin-top: 0.4rem;
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+.recent-product-meta {
+    display: grid;
+    align-content: start;
+    gap: 0.2rem;
+    text-align: right;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.recent-product-meta .muted {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+    .recent-product {
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .recent-product-meta {
+        text-align: left;
+        white-space: normal;
+    }
+}
+
 .btn {
     border: none;
     background: var(--accent);

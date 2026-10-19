@@ -18,6 +18,7 @@ builder.Services.AddScoped(_ => new HttpClient
 });
 builder.Services.AddScoped<OnlyProteinApiClient>();
 builder.Services.AddScoped<BarcodeScannerService>();
+builder.Services.AddScoped<RecentProductsService>();
 
 var host = builder.Build();
 Console.WriteLine($"[OnlyProtein] WASM started · build {AppBuildInfo.BuildId}");
