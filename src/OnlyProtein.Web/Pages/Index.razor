@@ -1,0 +1,500 @@
+@page "/"
+@inject OnlyProteinApiClient Api
+@inject BarcodeScannerService Scanner
+@inject RecentProductsService RecentProducts
+@inject IWebAssemblyHostEnvironment HostEnvironment
+@implements IAsyncDisposable
+
+<PageTitle>OnlyProtein</PageTitle>
+
+<div class="page">
+    <header class="hero">
+        <h1>OnlyProtein</h1>
+        <p>Scan a product, enter what you paid, see cost per 100 kcal and per 100g protein.</p>
+    </header>
+
+    <section class="card">
+        <h2>1. Find product</h2>
+
+        <div class="scanner">
+            <video id="barcode-video" autoplay playsinline muted></video>
+            <div class="scanner-actions">
+                @if (_scanning)
+                {
+                    <button class="btn secondary" @onclick="StopScanAsync">Stop camera</button>
+                }
+                else
+                {
+                    <button class="btn" @onclick="StartScanAsync">Scan barcode</button>
+                }
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="barcode">Or enter barcode</label>
+            <div class="inline">
+                <input id="barcode" @bind="_barcode" @bind:event="oninput" placeholder="e.g. 3017620422003" />
+                <button class="btn" @onclick="LookupProductAsync" disabled="@_loading">
+                    @(_loading ? "Looking up..." : "Look up")
+                </button>
+            </div>
+            @if (_loading)
+            {
+                <p class="muted" role="status">Checking Open Food Facts...</p>
+            }
+        </div>
+
+        @if (HostEnvironment.Environment == "Development")
+        {
+            <div class="test-barcodes">
+                <span class="muted">Test products</span>
+                <div class="test-barcode-list">
+                    @foreach (var sample in TestBarcodeCatalog.Items)
+                    {
+                        <button class="test-barcode" @onclick="() => UseTestBarcode(sample)">
+                            @sample.Name
+                            <span>@sample.Barcode</span>
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <p class="error">@_error</p>
+        }
+    </section>
+
+    @if (_recentProducts.Count > 0)
+    {
+        <section class="card recent-products">
+            <h2>Recent products</h2>
+            <div class="recent-product-list">
+                @foreach (var recentProduct in _recentProducts)
+                {
+                    <div class="recent-product">
+                        <div class="recent-product-main">
+                            <strong>@recentProduct.ProductName</strong>
+                            @if (!string.IsNullOrWhiteSpace(recentProduct.Brand))
+                            {
+                                <span class="muted">@recentProduct.Brand</span>
+                            }
+                            @if (recentProduct.CaloriesPer100 is not null || recentProduct.ProteinPer100 is not null)
+                            {
+                                <span class="recent-product-nutrition">
+                                    @if (recentProduct.CaloriesPer100 is not null)
+                                    {
+                                        <span>@recentProduct.CaloriesPer100.Value.ToString("0.#") kcal</span>
+                                    }
+                                    @if (recentProduct.ProteinPer100 is not null)
+                                    {
+                                        <span>@recentProduct.ProteinPer100.Value.ToString("0.#") g protein</span>
+                                    }
+                                    <span>per 100</span>
+                                </span>
+                            }
+                        </div>
+                        <div class="recent-product-meta">
+                            <span class="muted">Barcode: @recentProduct.Barcode</span>
+                            <span class="muted">Saved @recentProduct.SavedAt.ToLocalTime().ToString("g")</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    @if (_product is not null)
+    {
+        <section class="card">
+            <h2>2. Product</h2>
+            <div class="product">
+                @if (!string.IsNullOrWhiteSpace(_product.ImageUrl))
+                {
+                    <img src="@_product.ImageUrl" alt="@_product.Name" />
+                }
+                <div>
+                    <h3>@_product.Name</h3>
+                    <p class="muted">Barcode: @_product.Barcode</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>3. Your purchase</h2>
+
+            <div class="field">
+                <label for="price">Price (EUR)</label>
+                <input id="price" type="number" step="0.01" min="0" value="@_priceText" @oninput="OnPriceInput" />
+                <p class="field-hint">Enter the price you paid for this package.</p>
+                @if (_price is not > 0)
+                {
+                    <p class="warning" role="status">Price is missing. Enter what you paid before calculating.</p>
+                }
+            </div>
+
+            <div class="field">
+                <label for="quantity">Quantity</label>
+                <div class="inline">
+                    <input id="quantity" type="number" step="1" min="1" value="@_quantityText" @oninput="OnQuantityInput" />
+                    <select id="unit" value="@UnitValue" @onchange="OnUnitChangedAsync">
+                        <option value="g">g</option>
+                        <option value="ml">ml</option>
+                    </select>
+                </div>
+                @if (_quantity is not > 0)
+                {
+                    <p class="warning" role="status">Package size was not found. Enter the quantity before calculating.</p>
+                }
+            </div>
+
+            <div class="field">
+                <label for="kcal">Kcal per @_basisLabel</label>
+                <input id="kcal" type="number" step="0.1" min="0" value="@_kcalText" @oninput="OnKcalInput" />
+            </div>
+
+            <div class="field">
+                <label for="protein">Protein per @_basisLabel</label>
+                <input id="protein" type="number" step="0.1" min="0" value="@_proteinText" @oninput="OnProteinInput" />
+            </div>
+
+            @if (HasMatchingNutrition)
+            {
+                <p class="field-hint nutrition-source" role="status">
+                    Nutrition loaded from Open Food Facts per @_basisLabel.
+                    You can adjust it if the package label differs.
+                </p>
+            }
+            else
+            {
+                <p class="warning" role="status">
+                    Nutrition for @_basisLabel was not found. Enter kcal and protein manually.
+                </p>
+            }
+        </section>
+
+        @if (_indices is not null)
+        {
+            <section class="results">
+                <div class="result-card">
+                    <span class="label">Cost per 100 kcal</span>
+                    <span class="value">€@_indices.EurPer100Kcal.ToString("0.000")</span>
+                </div>
+                <div class="result-card">
+                    <span class="label">Cost per 100g protein</span>
+                    <span class="value">€@_indices.EurPer100gProtein.ToString("0.000")</span>
+                </div>
+            </section>
+        }
+        else if (_calculationError is not null)
+        {
+            <p class="error">@_calculationError</p>
+        }
+    }
+</div>
+
+@code {
+    private string _barcode = string.Empty;
+    private bool _loading;
+    private bool _scanning;
+    private string? _error;
+    private string? _calculationError;
+    private ProductInfo? _product;
+    private Indices? _indices;
+    private DotNetObjectReference<Index>? _scannerRef;
+    private IReadOnlyList<RecentProduct> _recentProducts = [];
+
+    private decimal? _price;
+    private decimal? _quantity;
+    private QuantityUnit _unit = QuantityUnit.G;
+    private decimal? _kcalPer100;
+    private decimal? _proteinPer100;
+    private string _priceText = string.Empty;
+    private string _quantityText = string.Empty;
+    private string _kcalText = string.Empty;
+    private string _proteinText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _recentProducts = await RecentProducts.GetAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.Error.WriteLine($"[OnlyProtein] Could not load recent products: {ex.Message}");
+            _error = "Saved recent products could not be loaded.";
+        }
+    }
+
+    private void UseTestBarcode(TestBarcode sample)
+    {
+        _barcode = sample.Barcode;
+        _error = null;
+    }
+
+    private string UnitValue => _unit == QuantityUnit.Ml ? "ml" : "g";
+    private string _basisLabel => _unit == QuantityUnit.Ml ? "100ml" : "100g";
+
+    private bool HasMatchingNutrition =>
+        _product is not null && NutritionForUnit(_product, _unit) is not null;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _scannerRef = DotNetObjectReference.Create(this);
+            if (_product is not null)
+                await RecalculateAsync();
+        }
+    }
+
+    private async Task StartScanAsync()
+    {
+        _error = null;
+        try
+        {
+            await Scanner.StartAsync("barcode-video", _scannerRef!);
+            _scanning = true;
+        }
+        catch (Exception ex)
+        {
+            _scanning = false;
+            _error = string.IsNullOrWhiteSpace(ex.Message)
+                ? "Could not access the camera. Enter the barcode manually."
+                : ex.Message;
+        }
+    }
+
+    private async Task StopScanAsync()
+    {
+        await Scanner.StopAsync();
+        _scanning = false;
+    }
+
+    [JSInvokable]
+    public void OnBarcodeDetected(string barcode)
+    {
+        // Return immediately to JS so camera teardown is not nested with the
+        // HTTP lookup (Blazor WASM HTTP also uses JS interop and can stall).
+        _ = InvokeAsync(async () =>
+        {
+            Console.WriteLine($"[OnlyProtein] barcode received · {barcode}");
+            _barcode = barcode;
+            _scanning = false;
+            StateHasChanged();
+            await LookupProductAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task LookupProductAsync()
+    {
+        _error = null;
+        _calculationError = null;
+        _product = null;
+        _indices = null;
+        _price = null;
+        _priceText = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(_barcode))
+        {
+            _error = "Enter a barcode first.";
+            return;
+        }
+
+        _barcode = _barcode.Trim();
+        if (!IsValidBarcode(_barcode))
+        {
+            _error = "Enter a valid 8- or 13-digit barcode.";
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            _product = await Api.GetProductAsync(_barcode);
+            if (_product is null)
+            {
+                _error = "Product not found. Try another barcode.";
+                return;
+            }
+
+            ApplyProductDefaults(_product);
+            await SaveRecentProductAsync(_product);
+            await RecalculateAsync();
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is null)
+        {
+            _error = "Could not reach the API. Is OnlyProtein.Api running?";
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+        {
+            _error = "Too many requests. Please wait a moment and try again.";
+        }
+        catch (HttpRequestException)
+        {
+            _error = "The product service returned an error. Please try again.";
+        }
+        catch (Exception)
+        {
+            _error = "Something went wrong while looking up the product.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveRecentProductAsync(ProductInfo product)
+    {
+        try
+        {
+            await RecentProducts.AddAsync(new RecentProduct(
+                product.Barcode,
+                product.Name,
+                null,
+                _quantity,
+                _kcalPer100,
+                _proteinPer100,
+                DateTimeOffset.UtcNow));
+
+            _recentProducts = await RecentProducts.GetAsync();
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.Error.WriteLine($"[OnlyProtein] Could not save recent product: {ex.Message}");
+            _error = "Product loaded, but it could not be saved to recent products.";
+        }
+    }
+
+    private void ApplyProductDefaults(ProductInfo product)
+    {
+        _unit = product.DefaultQuantityUnit
+            ?? (product.NutritionPer100ml is not null && product.NutritionPer100g is null
+                ? QuantityUnit.Ml
+                : QuantityUnit.G);
+        _quantity = product.DefaultQuantity;
+        _quantityText = FormatInputValue(_quantity);
+
+        var nutrition = NutritionForUnit(product, _unit);
+        _kcalPer100 = nutrition?.Kcal;
+        _proteinPer100 = nutrition?.ProteinG;
+        _kcalText = FormatInputValue(_kcalPer100);
+        _proteinText = FormatInputValue(_proteinPer100);
+    }
+
+    private async Task OnUnitChangedAsync(ChangeEventArgs e)
+    {
+        _unit = string.Equals(e.Value?.ToString(), "ml", StringComparison.OrdinalIgnoreCase)
+            ? QuantityUnit.Ml
+            : QuantityUnit.G;
+
+        if (_product is not null)
+        {
+            var nutrition = NutritionForUnit(_product, _unit);
+            if (nutrition is not null)
+            {
+                _kcalPer100 = nutrition.Kcal;
+                _proteinPer100 = nutrition.ProteinG;
+                _kcalText = FormatInputValue(_kcalPer100);
+                _proteinText = FormatInputValue(_proteinPer100);
+            }
+        }
+
+        await RecalculateAsync();
+    }
+
+    private static NutritionFacts? NutritionForUnit(ProductInfo product, QuantityUnit unit) =>
+        unit == QuantityUnit.Ml ? product.NutritionPer100ml : product.NutritionPer100g;
+
+    private static bool IsValidBarcode(string barcode)
+    {
+        if ((barcode.Length != 8 && barcode.Length != 13) ||
+            barcode.Any(character => character is < '0' or > '9'))
+            return false;
+
+        var checksum = 0;
+        for (var index = 0; index < barcode.Length - 1; index++)
+        {
+            var digit = barcode[index] - '0';
+            checksum += digit * ((barcode.Length - index) % 2 == 0 ? 3 : 1);
+        }
+
+        var checkDigit = (10 - checksum % 10) % 10;
+        return checkDigit == barcode[^1] - '0';
+    }
+
+    private async Task RecalculateAsync()
+    {
+        _calculationError = null;
+        _indices = null;
+
+        if (_product is null ||
+            _price <= 0 ||
+            _quantity is not > 0 ||
+            _kcalPer100 is not > 0 ||
+            _proteinPer100 is not > 0)
+            return;
+
+        var price = _price.GetValueOrDefault();
+        var quantity = _quantity.GetValueOrDefault();
+        var kcalPer100 = _kcalPer100.GetValueOrDefault();
+        var proteinPer100 = _proteinPer100.GetValueOrDefault();
+
+        try
+        {
+            _indices = await Api.CalculateAsync(new CalculateRequest(
+                price,
+                quantity,
+                _unit,
+                kcalPer100,
+                proteinPer100));
+
+            if (_indices is null)
+                _calculationError = "Could not calculate indices.";
+        }
+        catch (Exception)
+        {
+            _calculationError = "Could not calculate indices.";
+        }
+    }
+
+    private async Task OnPriceInput(ChangeEventArgs e) =>
+        await UpdateDecimalInputAsync(e, value => _price = value, value => _priceText = value);
+
+    private async Task OnQuantityInput(ChangeEventArgs e) =>
+        await UpdateDecimalInputAsync(e, value => _quantity = value, value => _quantityText = value);
+
+    private async Task OnKcalInput(ChangeEventArgs e) =>
+        await UpdateDecimalInputAsync(e, value => _kcalPer100 = value, value => _kcalText = value);
+
+    private async Task OnProteinInput(ChangeEventArgs e) =>
+        await UpdateDecimalInputAsync(e, value => _proteinPer100 = value, value => _proteinText = value);
+
+    private async Task UpdateDecimalInputAsync(
+        ChangeEventArgs e,
+        Action<decimal?> assign,
+        Action<string> assignText)
+    {
+        var text = e.Value?.ToString() ?? string.Empty;
+        assignText(text);
+
+        if (decimal.TryParse(text, out var value))
+            assign(value);
+        else
+            assign(null);
+
+        await RecalculateAsync();
+    }
+
+    private static string FormatInputValue(decimal? value) =>
+        value?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+
+    public async ValueTask DisposeAsync()
+    {
+        await Scanner.StopAsync();
+        _scannerRef?.Dispose();
+    }
+}
