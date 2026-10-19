@@ -1,6 +1,6 @@
 using Microsoft.JSInterop;
 
-namespace NutriIndex.Web.Services;
+namespace OnlyProtein.Web.Services;
 
 public class BarcodeScannerService
 {

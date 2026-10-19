@@ -2,14 +2,14 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace NutriIndex.Api.Tests;
+namespace OnlyProtein.Api.Tests;
 
 public class RateLimitingTests
 {
     [Fact]
     public async Task Products_Returns429_AfterPermitLimit()
     {
-        await using var factory = new NutriIndexApiFactory();
+        await using var factory = new OnlyProteinApiFactory();
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.10");
 
@@ -29,7 +29,7 @@ public class RateLimitingTests
     [Fact]
     public async Task Calculate_Returns429_AfterPermitLimit()
     {
-        await using var factory = new NutriIndexApiFactory();
+        await using var factory = new OnlyProteinApiFactory();
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.20");
 
@@ -54,7 +54,7 @@ public class RateLimitingTests
     [Fact]
     public async Task Health_IsNotRateLimited()
     {
-        await using var factory = new NutriIndexApiFactory();
+        await using var factory = new OnlyProteinApiFactory();
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.30");
 
@@ -68,7 +68,7 @@ public class RateLimitingTests
     [Fact]
     public async Task Products_PartitionsByForwardedClientIp()
     {
-        await using var factory = new NutriIndexApiFactory();
+        await using var factory = new OnlyProteinApiFactory();
         var client = factory.CreateClient();
 
         async Task<HttpStatusCode> GetProductAsync(string ip)

@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\NutriIndex.Core\NutriIndex.Core.csproj" />
+    <ProjectReference Include="..\..\src\OnlyProtein.Core\OnlyProtein.Core.csproj" />
   </ItemGroup>
 
 </Project>

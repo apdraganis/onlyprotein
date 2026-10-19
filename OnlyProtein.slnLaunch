@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Api-Web",
+    "Projects": [
+      {
+        "Path": "src\\OnlyProtein.Api\\OnlyProtein.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\OnlyProtein.Web\\OnlyProtein.Web.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

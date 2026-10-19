@@ -1,10 +1,10 @@
 using System.Reflection;
 
-namespace NutriIndex.Core;
+namespace OnlyProtein.Core;
 
 public static class BuildInfo
 {
-    private const string BuildIdKey = "NutriIndex.BuildId";
+    private const string BuildIdKey = "OnlyProtein.BuildId";
 
     public static string BuildId { get; } = Resolve(BuildIdKey);
 

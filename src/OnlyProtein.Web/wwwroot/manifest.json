@@ -1,6 +1,6 @@
 {
-  "name": "NutriIndex",
-  "short_name": "NutriIndex",
+  "name": "OnlyProtein",
+  "short_name": "OnlyProtein",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",

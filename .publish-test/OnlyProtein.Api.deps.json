@@ -6,14 +6,14 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v7.0": {
-      "NutriIndex.Api/1.0.0": {
+      "OnlyProtein.Api/1.0.0": {
         "dependencies": {
           "Microsoft.AspNetCore.Components.WebAssembly.Server": "7.0.5",
-          "NutriIndex.Core": "1.0.0",
-          "NutriIndex.Web": "1.0.0"
+          "OnlyProtein.Core": "1.0.0",
+          "OnlyProtein.Web": "1.0.0"
         },
         "runtime": {
-          "NutriIndex.Api.dll": {}
+          "OnlyProtein.Api.dll": {}
         }
       },
       "Microsoft.AspNetCore.Authorization/7.0.5": {
@@ -206,24 +206,24 @@
           "System.Text.Encodings.Web": "7.0.0"
         }
       },
-      "NutriIndex.Core/1.0.0": {
+      "OnlyProtein.Core/1.0.0": {
         "runtime": {
-          "NutriIndex.Core.dll": {}
+          "OnlyProtein.Core.dll": {}
         }
       },
-      "NutriIndex.Web/1.0.0": {
+      "OnlyProtein.Web/1.0.0": {
         "dependencies": {
           "Microsoft.AspNetCore.Components.WebAssembly": "7.0.5",
-          "NutriIndex.Core": "1.0.0"
+          "OnlyProtein.Core": "1.0.0"
         },
         "runtime": {
-          "NutriIndex.Web.dll": {}
+          "OnlyProtein.Web.dll": {}
         }
       }
     }
   },
   "libraries": {
-    "NutriIndex.Api/1.0.0": {
+    "OnlyProtein.Api/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -417,12 +417,12 @@
       "path": "system.text.json/7.0.0",
       "hashPath": "system.text.json.7.0.0.nupkg.sha512"
     },
-    "NutriIndex.Core/1.0.0": {
+    "OnlyProtein.Core/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "NutriIndex.Web/1.0.0": {
+    "OnlyProtein.Web/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

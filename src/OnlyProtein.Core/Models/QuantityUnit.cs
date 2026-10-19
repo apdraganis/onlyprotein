@@ -1,4 +1,4 @@
-namespace NutriIndex.Core.Models;
+namespace OnlyProtein.Core.Models;
 
 public enum QuantityUnit
 {

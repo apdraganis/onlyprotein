@@ -45,14 +45,14 @@ window.barcodeScanner = (function () {
 
             detected = true;
             const barcode = result.getText();
-            console.info("[NutriIndex] barcode detected", barcode);
+            console.info("[OnlyProtein] barcode detected", barcode);
 
             // Notify Blazor, then stop the camera. Do not await the .NET call
             // through product lookup — HTTP uses JS interop and nested awaits
             // can stall until another UI event (e.g. clicking Look up).
             void dotNetRef
                 .invokeMethodAsync("OnBarcodeDetected", barcode)
-                .catch((error) => console.error("[NutriIndex] barcode callback failed", error));
+                .catch((error) => console.error("[OnlyProtein] barcode callback failed", error));
             void stop(videoElementId);
         };
 

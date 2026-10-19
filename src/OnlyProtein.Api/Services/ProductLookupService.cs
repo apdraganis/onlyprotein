@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Caching.Memory;
-using NutriIndex.Core.Models;
+using OnlyProtein.Core.Models;
 
-namespace NutriIndex.Api.Services;
+namespace OnlyProtein.Api.Services;
 
 public sealed class ProductLookupService
 {

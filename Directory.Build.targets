@@ -1,5 +1,5 @@
 <Project>
-  <Target Name="SetNutriIndexBuildMetadata" BeforeTargets="BeforeBuild">
+  <Target Name="SetOnlyProteinBuildMetadata" BeforeTargets="BeforeBuild">
     <Exec Command="git rev-parse --short HEAD" StandardOutputImportance="Low" IgnoreExitCode="True">
       <Output TaskParameter="ConsoleOutput" ItemName="GitCommitOutput" />
     </Exec>
@@ -8,20 +8,20 @@
       <GitCommitShort>@(GitCommitOutput-&gt;Trim())</GitCommitShort>
       <GitCommitShort Condition="'$(GitCommitShort)' == ''">nogit</GitCommitShort>
       <BuildTimestampUtc>$([System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))</BuildTimestampUtc>
-      <NutriIndexBuildId>$(GitCommitShort)@$(BuildTimestampUtc)</NutriIndexBuildId>
+      <OnlyProteinBuildId>$(GitCommitShort)@$(BuildTimestampUtc)</OnlyProteinBuildId>
     </PropertyGroup>
 
     <ItemGroup>
       <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
-        <_Parameter1>NutriIndex.BuildId</_Parameter1>
-        <_Parameter2>$(NutriIndexBuildId)</_Parameter2>
+        <_Parameter1>OnlyProtein.BuildId</_Parameter1>
+        <_Parameter2>$(OnlyProteinBuildId)</_Parameter2>
       </AssemblyAttribute>
     </ItemGroup>
 
     <WriteLinesToFile
-      Condition="'$(MSBuildProjectName)' == 'NutriIndex.Web'"
+      Condition="'$(MSBuildProjectName)' == 'OnlyProtein.Web'"
       File="$(MSBuildProjectDirectory)/wwwroot/build.js"
-      Lines="window.__NUTRIINDEX_BUILD__={&quot;id&quot;:&quot;$(NutriIndexBuildId)&quot;,&quot;assetVersion&quot;:&quot;$(BuildTimestampUtc)&quot;};console.info('[NutriIndex] assets', window.__NUTRIINDEX_BUILD__);"
+      Lines="window.__ONLYPROTEIN_BUILD__={&quot;id&quot;:&quot;$(OnlyProteinBuildId)&quot;,&quot;assetVersion&quot;:&quot;$(BuildTimestampUtc)&quot;};console.info('[OnlyProtein] assets', window.__ONLYPROTEIN_BUILD__);"
       Overwrite="true" />
   </Target>
 </Project>

@@ -1,11 +1,11 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using NutriIndex.Core.Models;
+using OnlyProtein.Core.Models;
 
-namespace NutriIndex.Web.Services;
+namespace OnlyProtein.Web.Services;
 
-public class NutriIndexApiClient
+public class OnlyProteinApiClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -15,7 +15,7 @@ public class NutriIndexApiClient
 
     private readonly HttpClient _httpClient;
 
-    public NutriIndexApiClient(HttpClient httpClient)
+    public OnlyProteinApiClient(HttpClient httpClient)
     {
         _httpClient = httpClient;
     }

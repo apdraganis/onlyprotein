@@ -6,11 +6,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using NutriIndex.Api.Services;
+using OnlyProtein.Api.Services;
 
-namespace NutriIndex.Api.Tests;
+namespace OnlyProtein.Api.Tests;
 
-public sealed class NutriIndexApiFactory : WebApplicationFactory<Program>
+public sealed class OnlyProteinApiFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

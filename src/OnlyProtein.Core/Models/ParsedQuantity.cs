@@ -1,3 +1,3 @@
-namespace NutriIndex.Core.Models;
+namespace OnlyProtein.Core.Models;
 
 public record ParsedQuantity(decimal Value, QuantityUnit Unit);

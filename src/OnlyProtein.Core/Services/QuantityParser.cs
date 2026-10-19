@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using NutriIndex.Core.Models;
+using OnlyProtein.Core.Models;
 
-namespace NutriIndex.Core.Services;
+namespace OnlyProtein.Core.Services;
 
 public static partial class QuantityParser
 {

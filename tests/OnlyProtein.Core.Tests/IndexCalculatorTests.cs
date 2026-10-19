@@ -1,7 +1,7 @@
-using NutriIndex.Core.Models;
-using NutriIndex.Core.Services;
+using OnlyProtein.Core.Models;
+using OnlyProtein.Core.Services;
 
-namespace NutriIndex.Core.Tests;
+namespace OnlyProtein.Core.Tests;
 
 public class IndexCalculatorTests
 {

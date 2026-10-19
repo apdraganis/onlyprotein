@@ -3,10 +3,10 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Components.WebAssembly.Server;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
-using NutriIndex.Api.Services;
-using NutriIndex.Core;
-using NutriIndex.Core.Models;
-using NutriIndex.Core.Services;
+using OnlyProtein.Api.Services;
+using OnlyProtein.Core;
+using OnlyProtein.Core.Models;
+using OnlyProtein.Core.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +27,8 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient<IOpenFoodFactsClient, OpenFoodFactsClient>(client =>
 {
     client.BaseAddress = new Uri("https://world.openfoodfacts.org/");
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("NutriIndex/1.0 (MVP; contact: dev@local)");
+    client.Timeout = TimeSpan.FromSeconds(10);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("OnlyProtein/1.0 (MVP; contact: dev@local)");
 });
 builder.Services.AddSingleton<ProductLookupService>();
 
@@ -128,10 +129,10 @@ app.MapPost("/api/calculate", (CalculateRequest request) =>
 }).RequireRateLimiting("calculate");
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", build = BuildInfo.BuildId }));
-app.MapGet("/version", () => Results.Ok(new { app = "NutriIndex", build = BuildInfo.BuildId }));
+app.MapGet("/version", () => Results.Ok(new { app = "OnlyProtein", build = BuildInfo.BuildId }));
 app.MapFallbackToFile("index.html");
 
-Console.WriteLine($"[NutriIndex] API started · build {BuildInfo.BuildId}");
+Console.WriteLine($"[OnlyProtein] API started · build {BuildInfo.BuildId}");
 
 app.Run();
 

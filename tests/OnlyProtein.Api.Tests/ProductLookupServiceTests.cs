@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
-using NutriIndex.Api.Services;
-using NutriIndex.Core.Models;
+using OnlyProtein.Api.Services;
+using OnlyProtein.Core.Models;
 
-namespace NutriIndex.Api.Tests;
+namespace OnlyProtein.Api.Tests;
 
 public class ProductLookupServiceTests
 {

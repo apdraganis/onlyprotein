@@ -6,7 +6,7 @@
     "appsettings.Production.json"
   ],
   "debugBuild": false,
-  "entryAssembly": "NutriIndex.Web",
+  "entryAssembly": "OnlyProtein.Web",
   "icuDataMode": 0,
   "linkerEnabled": true,
   "resources": {
@@ -25,8 +25,8 @@
       "Microsoft.Extensions.Primitives.dll": "sha256-eXvGx2jcjpTPEJoAHBsW\/VuMPbNyyU+AsuhPmkzSSRY=",
       "Microsoft.JSInterop.dll": "sha256-d1AApAzy1QFD8J2+smh\/oYtL\/FrUcrezQ\/VrJOjmeYM=",
       "Microsoft.JSInterop.WebAssembly.dll": "sha256-3+dHa65PgCYOsUMlsJSDYPxt294+nWZxeMbopoWb+fA=",
-      "NutriIndex.Core.dll": "sha256-SVsNT+xJWavt3UePI3kt647UQ1kiGeWi3OOr4Gzz7AE=",
-      "NutriIndex.Web.dll": "sha256-X977OEO83n2g06AAaZtSwOsQwOWRLudTgg2wl07MiGQ=",
+      "OnlyProtein.Core.dll": "sha256-SVsNT+xJWavt3UePI3kt647UQ1kiGeWi3OOr4Gzz7AE=",
+      "OnlyProtein.Web.dll": "sha256-X977OEO83n2g06AAaZtSwOsQwOWRLudTgg2wl07MiGQ=",
       "System.Collections.Concurrent.dll": "sha256-782KacekEtwxuDcg05F3W1iMFuuWe0jXh92zSIAvLu0=",
       "System.Collections.dll": "sha256-jwqKEKcyxjnLozchYAFW\/XkT8L3QupyTzfrbfZr+0rU=",
       "System.ComponentModel.dll": "sha256-nDL4uAnV8XjBp7HMR8402tCIjKLnxen\/fQEcevUyqXs=",

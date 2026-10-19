@@ -1,10 +1,10 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using NutriIndex.Core.Models;
-using NutriIndex.Core.Services;
+using OnlyProtein.Core.Models;
+using OnlyProtein.Core.Services;
 
-namespace NutriIndex.Api.Services;
+namespace OnlyProtein.Api.Services;
 
 public interface IOpenFoodFactsClient
 {
@@ -13,6 +13,8 @@ public interface IOpenFoodFactsClient
 
 public class OpenFoodFactsClient : IOpenFoodFactsClient
 {
+    private const int MaxTransientRetries = 3;
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
@@ -29,36 +31,83 @@ public class OpenFoodFactsClient : IOpenFoodFactsClient
 
     public async Task<ProductInfo?> GetProductAsync(string barcode, CancellationToken cancellationToken = default)
     {
-        using var response = await _httpClient.GetAsync($"api/v2/product/{barcode}", cancellationToken);
+        for (var attempt = 0; attempt <= MaxTransientRetries; attempt++)
+        {
+            using var response = await _httpClient.GetAsync($"api/v2/product/{barcode}", cancellationToken);
 
-        if (response.StatusCode == HttpStatusCode.NotFound)
-            return null;
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                _logger.LogInformation("Product not found in Open Food Facts. Barcode: {Barcode}", barcode);
+                return null;
+            }
 
-        response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                if (IsTransient(response.StatusCode) && attempt < MaxTransientRetries)
+                {
+                    var delay = GetRetryDelay(response, attempt);
+                    _logger.LogWarning(
+                        "Transient Open Food Facts response {StatusCode} for barcode {Barcode}; retrying in {DelayMilliseconds} ms.",
+                        (int)response.StatusCode,
+                        barcode,
+                        delay.TotalMilliseconds);
+                    await Task.Delay(delay, cancellationToken);
+                    continue;
+                }
 
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        var payload = await JsonSerializer.DeserializeAsync<OffProductResponse>(stream, JsonOptions, cancellationToken);
+                _logger.LogWarning(
+                    "Open Food Facts returned {StatusCode} for barcode {Barcode} after {Attempts} attempt(s).",
+                    (int)response.StatusCode,
+                    barcode,
+                    attempt + 1);
 
-        if (payload?.Status != 1 || payload.Product is null)
-            return null;
+                response.EnsureSuccessStatusCode();
+            }
 
-        var product = payload.Product;
-        var parsedQuantity = QuantityParser.Parse(product.Quantity);
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            var payload = await JsonSerializer.DeserializeAsync<OffProductResponse>(stream, JsonOptions, cancellationToken);
 
-        return new ProductInfo(
-            Barcode: barcode,
-            Name: product.ProductName ?? product.GenericName ?? "Unknown product",
-            ImageUrl: product.ImageUrl,
-            DefaultQuantity: parsedQuantity?.Value,
-            DefaultQuantityUnit: parsedQuantity?.Unit,
-            NutritionPer100g: TryGetNutrition(
-                product.Nutriments?.EnergyKcal100g,
-                product.Nutriments?.EnergyKj100g,
-                product.Nutriments?.Proteins100g),
-            NutritionPer100ml: TryGetNutrition(
-                product.Nutriments?.EnergyKcal100ml,
-                product.Nutriments?.EnergyKj100ml,
-                product.Nutriments?.Proteins100ml));
+            if (payload?.Status != 1 || payload.Product is null)
+            {
+                _logger.LogWarning(
+                    "Open Food Facts returned an invalid or incomplete product response for barcode {Barcode}.",
+                    barcode);
+                return null;
+            }
+
+            var product = payload.Product;
+            var parsedQuantity = QuantityParser.Parse(product.Quantity);
+
+            return new ProductInfo(
+                Barcode: barcode,
+                Name: product.ProductName ?? product.GenericName ?? "Unknown product",
+                ImageUrl: product.ImageUrl,
+                DefaultQuantity: parsedQuantity?.Value,
+                DefaultQuantityUnit: parsedQuantity?.Unit,
+                NutritionPer100g: TryGetNutrition(
+                    product.Nutriments?.EnergyKcal100g,
+                    product.Nutriments?.EnergyKj100g,
+                    product.Nutriments?.Proteins100g),
+                NutritionPer100ml: TryGetNutrition(
+                    product.Nutriments?.EnergyKcal100ml,
+                    product.Nutriments?.EnergyKj100ml,
+                    product.Nutriments?.Proteins100ml));
+        }
+
+        return null;
+    }
+
+    private static bool IsTransient(HttpStatusCode statusCode) =>
+        statusCode == HttpStatusCode.RequestTimeout ||
+        statusCode == HttpStatusCode.TooManyRequests ||
+        (int)statusCode >= 500;
+
+    private static TimeSpan GetRetryDelay(HttpResponseMessage response, int attempt)
+    {
+        if (response.Headers.RetryAfter?.Delta is { } retryAfter)
+            return retryAfter > TimeSpan.FromSeconds(5) ? TimeSpan.FromSeconds(5) : retryAfter;
+
+        return TimeSpan.FromMilliseconds(250 * Math.Pow(2, attempt));
     }
 
     private static NutritionFacts? TryGetNutrition(decimal? kcal, decimal? energyKj, decimal? protein)
