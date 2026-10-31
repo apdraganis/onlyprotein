@@ -33,6 +33,28 @@
         (function () {
             var host = location.hostname;
             if (host !== "localhost" && host !== "127.0.0.1") {
+                if (!("serviceWorker" in navigator)) {
+                    return;
+                }
+
+                var refreshing = false;
+                navigator.serviceWorker.addEventListener("controllerchange", function () {
+                    if (refreshing) {
+                        return;
+                    }
+
+                    refreshing = true;
+                    window.location.reload();
+                });
+
+                navigator.serviceWorker.register("./service-worker.js", {
+                    scope: "./",
+                    updateViaCache: "none"
+                }).then(function (registration) {
+                    registration.update();
+                }).catch(function (error) {
+                    console.warn("[OnlyProtein] service worker registration failed", error);
+                });
                 return;
             }
 

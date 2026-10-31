@@ -2,8 +2,16 @@
 // offline support. See https://aka.ms/blazor-offline-considerations
 
 self.importScripts('./service-worker-assets.js');
-self.addEventListener('install', event => event.waitUntil(onInstall(event)));
+self.addEventListener('install', event => {
+    self.skipWaiting();
+    event.waitUntil(onInstall(event));
+});
 self.addEventListener('activate', event => event.waitUntil(onActivate(event)));
+self.addEventListener('message', event => {
+    if (event.data === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+});
 self.addEventListener('fetch', event => event.respondWith(onFetch(event)));
 
 const cacheNamePrefix = 'offline-cache-';
@@ -24,6 +32,7 @@ async function onInstall(event) {
 
 async function onActivate(event) {
     console.info('Service worker: Activate');
+    await self.clients.claim();
 
     // Delete unused caches
     const cacheKeys = await caches.keys();
