@@ -16,6 +16,13 @@
     <section class="card">
         <h2>1. Find product</h2>
 
+        <div class="scan-first">
+            <button class="btn scan-button" @onclick="StartScanAsync" disabled="@_scanning">
+                @(_scanning ? "Camera active" : "Scan barcode")
+            </button>
+            <p class="field-hint">Point your camera at the product barcode.</p>
+        </div>
+
         <div class="scanner">
             <video id="barcode-video" autoplay playsinline muted></video>
             <div class="scanner-actions">
@@ -23,19 +30,15 @@
                 {
                     <button class="btn secondary" @onclick="StopScanAsync">Stop camera</button>
                 }
-                else
-                {
-                    <button class="btn" @onclick="StartScanAsync">Scan barcode</button>
-                }
             </div>
         </div>
 
         <div class="field">
-            <label for="barcode">Or enter barcode</label>
+            <label for="barcode">Enter barcode manually</label>
             <div class="inline">
                 <input id="barcode" @bind="_barcode" @bind:event="oninput" placeholder="e.g. 3017620422003" />
                 <button class="btn" @onclick="LookupProductAsync" disabled="@_loading">
-                    @(_loading ? "Looking up..." : "Look up")
+                    @(_loading ? "Looking up..." : "Look up barcode")
                 </button>
             </div>
             @if (_loading)
@@ -73,7 +76,11 @@
             <div class="recent-product-list">
                 @foreach (var recentProduct in _recentProducts)
                 {
-                    <div class="recent-product">
+                    <div class="recent-product"
+                         role="button"
+                         tabindex="0"
+                         @onclick="() => SelectRecentProductAsync(recentProduct)"
+                         @onkeydown="e => OnRecentProductKeyDownAsync(e, recentProduct)">
                         <div class="recent-product-main">
                             <strong>@recentProduct.ProductName</strong>
                             @if (!string.IsNullOrWhiteSpace(recentProduct.Brand))
@@ -233,6 +240,17 @@
         _barcode = sample.Barcode;
         _error = null;
     }
+
+    private async Task SelectRecentProductAsync(RecentProduct product)
+    {
+        _barcode = product.Barcode;
+        await LookupProductAsync();
+    }
+
+    private Task OnRecentProductKeyDownAsync(KeyboardEventArgs e, RecentProduct product) =>
+        e.Key is "Enter" or " "
+            ? SelectRecentProductAsync(product)
+            : Task.CompletedTask;
 
     private string UnitValue => _unit == QuantityUnit.Ml ? "ml" : "g";
     private string _basisLabel => _unit == QuantityUnit.Ml ? "100ml" : "100g";
