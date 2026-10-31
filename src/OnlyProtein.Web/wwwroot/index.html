@@ -47,7 +47,8 @@
                     window.location.reload();
                 });
 
-                navigator.serviceWorker.register("./service-worker.js", {
+                var buildVersion = (window.__ONLYPROTEIN_BUILD__ && window.__ONLYPROTEIN_BUILD__.assetVersion) || Date.now();
+                navigator.serviceWorker.register("./service-worker.js?v=" + encodeURIComponent(buildVersion), {
                     scope: "./",
                     updateViaCache: "none"
                 }).then(function (registration) {

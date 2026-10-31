@@ -42,16 +42,19 @@ async function onActivate(event) {
 }
 
 async function onFetch(event) {
-    let cachedResponse = null;
-    if (event.request.method === 'GET') {
-        // For all navigation requests, try to serve index.html from cache
-        // If you need some URLs to be server-rendered, edit the following check to exclude those URLs
-        const shouldServeIndexHtml = event.request.mode === 'navigate';
-
-        const request = shouldServeIndexHtml ? 'index.html' : event.request;
-        const cache = await caches.open(cacheName);
-        cachedResponse = await cache.match(request);
+    if (event.request.method !== 'GET') {
+        return fetch(event.request);
     }
 
-    return cachedResponse || fetch(event.request);
+    if (event.request.mode === 'navigate') {
+        try {
+            return await fetch(event.request, { cache: 'no-store' });
+        } catch {
+            const cache = await caches.open(cacheName);
+            return await cache.match('index.html');
+        }
+    }
+
+    const cache = await caches.open(cacheName);
+    return await cache.match(event.request) || fetch(event.request);
 }
