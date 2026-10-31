@@ -61,6 +61,22 @@ html, body {
     margin-top: 0.75rem;
 }
 
+.scan-first {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.scan-button {
+    width: 100%;
+    min-height: 4rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.scan-first .field-hint {
+    margin-top: 0.5rem;
+}
+
 .field {
     margin-top: 1rem;
 }
@@ -154,6 +170,17 @@ html, body {
     gap: 1rem;
     padding: 0.7rem 0;
     border-top: 1px solid var(--border);
+    cursor: pointer;
+    outline: none;
+}
+
+.recent-product:hover,
+.recent-product:focus-visible {
+    background: #f8fafc;
+}
+
+.recent-product:focus-visible {
+    box-shadow: 0 0 0 2px var(--accent);
 }
 
 .recent-product-main,
